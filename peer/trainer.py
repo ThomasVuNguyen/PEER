@@ -3,33 +3,42 @@ import torch.nn.functional as F
 from tqdm import tqdm
 import math
 
-def train(model, train_loader, optimizer, device):
+def train(model, train_loader, optimizer, device, scaler=None):
     model.train()
     total_loss = 0
     batch_losses = []
+    use_amp = scaler is not None
+
     for batch in tqdm(train_loader, disable=torch.distributed.get_rank() != 0):
         input_ids, attention_mask = batch
         input_ids, attention_mask = input_ids.to(device), attention_mask.to(device)
-        
+
         optimizer.zero_grad()
-        
+
         # Shift the input_ids and attention_mask to create targets
         targets = input_ids[:, 1:].contiguous()
         input_ids = input_ids[:, :-1].contiguous()
         attention_mask = attention_mask[:, :-1].contiguous()
-        
-        outputs = model(input_ids)
-        
-        # Reshape outputs and targets for loss calculation
-        outputs = outputs.view(-1, outputs.size(-1))
-        targets = targets.view(-1)
-        
-        # Calculate loss (ignore padding token, usually 0)
-        loss = F.cross_entropy(outputs, targets, ignore_index=0)
-        
-        loss.backward()
-        optimizer.step()
-        
+
+        # Mixed precision training
+        if use_amp:
+            with torch.amp.autocast('cuda'):
+                outputs = model(input_ids)
+                outputs = outputs.view(-1, outputs.size(-1))
+                targets = targets.view(-1)
+                loss = F.cross_entropy(outputs, targets, ignore_index=0)
+
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            outputs = model(input_ids)
+            outputs = outputs.view(-1, outputs.size(-1))
+            targets = targets.view(-1)
+            loss = F.cross_entropy(outputs, targets, ignore_index=0)
+            loss.backward()
+            optimizer.step()
+
         total_loss += loss.item()
         batch_losses.append(loss.item())
 

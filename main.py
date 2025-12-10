@@ -9,6 +9,7 @@ from peer.dataset import PileDataset
 from peer.model import PEERLanguageModel
 from peer.trainer import train, validate
 import matplotlib.pyplot as plt
+from torch.amp import GradScaler
 
 def plot_losses(train_losses, val_losses, epoch, save_dir):
     plt.figure(figsize=(10, 5))
@@ -33,9 +34,9 @@ if __name__ == "__main__":
     dim = 256
     num_layers = 8
     num_heads = 8
-    num_experts = 512 * 512  
+    num_experts = 256 * 256  # Reduced from 512*512 to fit in 24GB GPU
     top_k = 16
-    batch_size = 6
+    batch_size = 2  # Reduced from 6 to fit in memory
     num_epochs = 10
     learning_rate = 1e-4
     
@@ -58,18 +59,21 @@ if __name__ == "__main__":
     
     # Optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    
+
+    # Mixed precision training
+    scaler = GradScaler('cuda')
+
     if local_rank == 0:
         print("Number of parameters:", sum(p.numel() for p in model.parameters()))
         os.makedirs('plots', exist_ok=True)
-    
+
     # Training and validation loop
     best_val_loss = float('inf')
     for epoch in range(num_epochs):
         train_sampler.set_epoch(epoch)
         if local_rank == 0:
             print(f"Epoch Training {epoch+1}/{num_epochs}")
-        train_loss, train_batch_losses = train(model, train_loader, optimizer, device)
+        train_loss, train_batch_losses = train(model, train_loader, optimizer, device, scaler)
         if local_rank == 0:
             print(f"Epoch Validation {epoch+1}/{num_epochs}")
             val_loss, val_perplexity, val_batch_losses = validate(model, val_loader, device)
