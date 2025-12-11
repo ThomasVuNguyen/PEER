@@ -45,8 +45,9 @@ if __name__ == "__main__":
     tokenizer.pad_token = tokenizer.eos_token
     model = PEERLanguageModel(vocab_size, dim, num_layers, num_heads, num_experts, top_k).to(device)
 
-    # Compile model for optimized performance (PyTorch 2.0+)
-    model = torch.compile(model, mode='reduce-overhead')
+    # Note: torch.compile disabled - requires python3-dev system package
+    # To enable: sudo apt-get install python3.12-dev, then uncomment below
+    # model = torch.compile(model, mode='reduce-overhead')
 
     # Wrap the model with DistributedDataParallel
     model = DDP(model, device_ids=[local_rank], output_device=local_rank)
