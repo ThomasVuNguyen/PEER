@@ -13,6 +13,9 @@ Implementation of paper [Mixture of A Million Experts](https://arxiv.org/pdf/240
 ## Setup
 
 ```bash
+# Install Python development headers (required for torch.compile optimization)
+sudo apt-get install python3.12-dev
+
 # Create virtual environment
 python3 -m venv venv
 
