@@ -36,7 +36,7 @@ if __name__ == "__main__":
     num_heads = 8
     num_experts = 256 * 256  # Reduced from 512*512 to fit in 24GB GPU
     top_k = 16
-    batch_size = 2  # Reduced from 6 to fit in memory
+    batch_size = 4  # Optimized for RTX 4090 24GB - conservative setting for testing
     num_epochs = 10
     learning_rate = 1e-4
     
@@ -44,7 +44,10 @@ if __name__ == "__main__":
     tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
     tokenizer.pad_token = tokenizer.eos_token
     model = PEERLanguageModel(vocab_size, dim, num_layers, num_heads, num_experts, top_k).to(device)
-    
+
+    # Compile model for optimized performance (PyTorch 2.0+)
+    model = torch.compile(model, mode='reduce-overhead')
+
     # Wrap the model with DistributedDataParallel
     model = DDP(model, device_ids=[local_rank], output_device=local_rank)
     
@@ -54,8 +57,24 @@ if __name__ == "__main__":
     
     # Use DistributedSampler for the training data
     train_sampler = DistributedSampler(train_dataset)
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=train_sampler)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        sampler=train_sampler,
+        num_workers=4,           # Parallel data loading
+        pin_memory=True,         # Faster CPU→GPU transfer
+        prefetch_factor=3,       # Preload batches
+        persistent_workers=True  # Reuse workers between epochs
+    )
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=4,
+        pin_memory=True,
+        prefetch_factor=3,
+        persistent_workers=True
+    )
     
     # Optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)

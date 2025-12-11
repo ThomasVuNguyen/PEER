@@ -53,10 +53,12 @@ def validate(model, val_loader, device):
         for batch in tqdm(val_loader):
             input_ids, attention_mask = batch
             input_ids, attention_mask = input_ids.to(device), attention_mask.to(device)
-            
-            outputs = model(input_ids)
-            loss = F.cross_entropy(outputs.view(-1, outputs.size(-1)), input_ids.view(-1), ignore_index=0, reduction='sum')
-            
+
+            # Use mixed precision for faster validation
+            with torch.amp.autocast('cuda'):
+                outputs = model(input_ids)
+                loss = F.cross_entropy(outputs.view(-1, outputs.size(-1)), input_ids.view(-1), ignore_index=0, reduction='sum')
+
             total_loss += loss.item()
             total_tokens += (input_ids != 0).sum().item()
             batch_losses.append(loss.item() / (input_ids != 0).sum().item())
