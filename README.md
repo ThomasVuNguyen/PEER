@@ -38,17 +38,11 @@ torchrun --nproc_per_node=N --nnodes=1 main.py
 
 ## Hardware Requirements
 
-**Current Configuration (256x256 experts, batch_size=4, optimized):**
+**Current Configuration (256x256 experts, batch_size=2):**
 - GPU: RTX 4090 (24GB)
-- VRAM Usage: ~18-20/24GB (estimated with optimizations)
+- VRAM Usage: 16/24GB
 - GPU Utilization: 100%
-- Training Time: ~1.5 hours per epoch on Wikitext-103 (estimated with 2x speedup)
-- **Optimizations:**
-  - Mixed precision training (FP16)
-  - torch.compile for graph optimization
-  - Parallel data loading (num_workers=4)
-  - Memory-pinned tensors for faster GPU transfer
-  - Batch prefetching (prefetch_factor=3)
+- Training Time: ~3 hours per epoch on Wikitext-103
 
 **Original Configuration (512x512 experts, batch_size=6):**
 - Model: 2.2B parameters, 8 layers, 8 heads, dimension = 256
