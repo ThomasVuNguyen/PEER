@@ -46,7 +46,8 @@ if __name__ == "__main__":
     model = PEERLanguageModel(vocab_size, dim, num_layers, num_heads, num_experts, top_k).to(device)
 
     # Compile model for optimized performance (PyTorch 2.0+)
-    model = torch.compile(model, mode='reduce-overhead')
+    # TEMPORARILY DISABLED FOR TESTING
+    # model = torch.compile(model, mode='reduce-overhead')
 
     # Wrap the model with DistributedDataParallel
     model = DDP(model, device_ids=[local_rank], output_device=local_rank)
@@ -87,17 +88,18 @@ if __name__ == "__main__":
         os.makedirs('plots', exist_ok=True)
 
     # Warmup pass to trigger torch.compile compilation before training
-    if local_rank == 0:
-        print("Warming up model (compiling with torch.compile)...")
-    model.train()
-    dummy_input = torch.randint(0, vocab_size, (batch_size, 512), device=device)
-    with torch.amp.autocast('cuda'):
-        dummy_output = model(dummy_input)
-        dummy_loss = dummy_output.sum()
-    scaler.scale(dummy_loss).backward()
-    optimizer.zero_grad()
-    if local_rank == 0:
-        print("Warmup complete! Starting training...")
+    # DISABLED WHILE torch.compile IS DISABLED
+    # if local_rank == 0:
+    #     print("Warming up model (compiling with torch.compile)...")
+    # model.train()
+    # dummy_input = torch.randint(0, vocab_size, (batch_size, 512), device=device)
+    # with torch.amp.autocast('cuda'):
+    #     dummy_output = model(dummy_input)
+    #     dummy_loss = dummy_output.sum()
+    # scaler.scale(dummy_loss).backward()
+    # optimizer.zero_grad()
+    # if local_rank == 0:
+    #     print("Warmup complete! Starting training...")
 
     # Training and validation loop
     best_val_loss = float('inf')
