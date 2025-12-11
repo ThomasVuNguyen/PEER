@@ -9,7 +9,7 @@ class PileDataset(Dataset):
         self.data = load_dataset(file_path, "wikitext-103-raw-v1", split=split)
         self.data = self.data.filter(lambda x: len(x['text']) > 0)
         if split == "train":
-            self.data = self.data.select(range(0, 10000))  # Quick test subset
+            self.data = self.data.select(range(0, 2000))  # Fast debug test
         
     def __len__(self):
         return len(self.data)

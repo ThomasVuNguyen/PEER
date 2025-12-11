@@ -93,9 +93,15 @@ if __name__ == "__main__":
     dummy_input = torch.randint(0, vocab_size, (batch_size, 512), device=device)
     with torch.amp.autocast('cuda'):
         dummy_output = model(dummy_input)
-        dummy_loss = dummy_output.sum()
-    scaler.scale(dummy_loss).backward()
+        dummy_loss = dummy_output.mean()  # Use mean instead of sum
+
+    # Proper warmup: forward + backward + step (don't update weights)
     optimizer.zero_grad()
+    scaler.scale(dummy_loss).backward()
+    scaler.step(optimizer)
+    scaler.update()
+    optimizer.zero_grad()  # Clear gradients before real training
+
     if local_rank == 0:
         print("Warmup complete! Starting training...")
 
