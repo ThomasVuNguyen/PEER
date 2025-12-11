@@ -20,8 +20,6 @@ build/
 *.pt
 
 # Training outputs
-plots/
-*.png
 
 # IDE
 .vscode/
