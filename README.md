@@ -42,7 +42,7 @@ torchrun --nproc_per_node=N --nnodes=1 main.py
 - GPU: RTX 4090 (24GB)
 - VRAM Usage: 16/24GB
 - GPU Utilization: 100%
-- Training Time: ~6 hours (10 epochs on Wikitext-103)
+- Training Time: ~3 hours per epoch on Wikitext-103
 
 **Original Configuration (512x512 experts, batch_size=6):**
 - Model: 2.2B parameters, 8 layers, 8 heads, dimension = 256
