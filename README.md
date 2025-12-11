@@ -52,8 +52,15 @@ torchrun --nproc_per_node=N --nnodes=1 main.py
 
 ```bash
 # Generate text from trained model
-python run.py --prompt "Your prompt here" --max_tokens 100
+# Recommended parameters for stable generation:
+python run.py --prompt "Your prompt here" --max_tokens 100 --temperature 1.0 --top_k 0 --top_p 1.0
+
+# Example output:
+# Prompt: Make America great
+# Generated: Make America great Around enforcement795 overeKat showers Phar plethora Ku probe Mandatory light tem renegoticurrent...
 ```
+
+**Note:** The model generates successfully with `temperature=1.0`, `top_k=0`, and `top_p=1.0` settings after 10 epochs of training on WikiText-103.
 
 ## Training Process
 

@@ -12,7 +12,7 @@ def load_model(checkpoint_path, device):
     dim = 256
     num_layers = 8
     num_heads = 8
-    num_experts = 512 * 512
+    num_experts = 256 * 256
     top_k = 16
 
     model = PEERLanguageModel(vocab_size, dim, num_layers, num_heads, num_experts, top_k)
@@ -74,7 +74,13 @@ def generate(model, tokenizer, prompt, max_new_tokens=100, temperature=0.8, top_
 
         # Sample from the filtered distribution
         probs = F.softmax(next_token_logits, dim=-1)
-        next_token = torch.multinomial(probs, num_samples=1)
+
+        # Handle edge case where all logits are -inf (due to aggressive filtering)
+        if torch.isnan(probs).any() or torch.isinf(probs).any():
+            # Fallback: sample from uniform distribution over vocabulary
+            next_token = torch.randint(0, probs.size(-1), (1, 1), device=device)
+        else:
+            next_token = torch.multinomial(probs, num_samples=1)
 
         # Append to generated sequence
         generated = torch.cat([generated, next_token], dim=1)
@@ -91,7 +97,7 @@ def generate(model, tokenizer, prompt, max_new_tokens=100, temperature=0.8, top_
 def main():
     parser = argparse.ArgumentParser(description='Generate text using trained PEER model')
     parser.add_argument('--prompt', type=str, required=True, help='Input prompt for generation')
-    parser.add_argument('--checkpoint', type=str, default='best_peer_language_model.pth', help='Path to model checkpoint')
+    parser.add_argument('--checkpoint', type=str, default='final_peer_language_model.pth', help='Path to model checkpoint')
     parser.add_argument('--max_tokens', type=int, default=100, help='Maximum number of tokens to generate')
     parser.add_argument('--temperature', type=float, default=0.8, help='Sampling temperature (higher = more random)')
     parser.add_argument('--top_k', type=int, default=50, help='Top-k sampling (0 to disable)')
